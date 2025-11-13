@@ -1,5 +1,4 @@
 # OS Final Project: Kernel Shell with System Introspection  
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ## Repository  
 https://github.com/BlakeBrenner/OS-final-project
