@@ -14,6 +14,7 @@ const unsigned int multiboot_header[] __attribute__((section(".multiboot"))) = {
     MULTIBOOT2_HEADER_MAGIC, 0, 16, -(16 + MULTIBOOT2_HEADER_MAGIC), 0, 12
 };
 
+
 // VGA definitions
 #define VGA_ADDRESS 0xb8000
 #define VGA_WIDTH   80
@@ -23,8 +24,6 @@ struct termbuf {
     char ascii;
     char color;
 };
-
-
 
 static int cursor_row = 0;
 static int cursor_column = 0;
@@ -40,7 +39,7 @@ void scroll() {
             vram[(row - 1) * VGA_WIDTH + col] = vram[row * VGA_WIDTH + col];
         }
     }
-
+    
     // Clear the last line
     for (int col = 0; col < VGA_WIDTH; col++) {
         vram[(VGA_HEIGHT - 1) * VGA_WIDTH + col].ascii = ' ';
@@ -84,6 +83,8 @@ int putc(int ch) {
 
     return ch;
 }
+
+
 
 void test_page_allocator(void) {
     esp_printf(putc, "\n=== PAGE FRAME ALLOCATOR TEST ===\n");
@@ -145,6 +146,7 @@ void main() {
     clear_screen();
     esp_printf(putc, "Kernel shell booting...\n");
 
+
     init_pfa_list();
 
     /* ---- page bring-up ---- */
@@ -168,7 +170,7 @@ void main() {
     esp_printf(putc, "Paging enabled. PD=%p  kernel=%p..%p  stack~%p  VGA=0xB8000\n",
                kernel_pd, (void*)0x00100000u, &_end_kernel, (void*)esp_val);
     /* ---- end paging bring-up ---- */
-
+    
     remap_pic();
     load_gdt();
     init_idt();
