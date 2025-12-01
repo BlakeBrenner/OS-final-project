@@ -46,3 +46,16 @@ git clone https://github.com/BlakeBrenner/OS-final-project.git
 cd OS-final-project
 make
 qemu-system-i386 -kernel build/kernel.bin
+
+### Host-side fork/exec demos
+You can experiment with simple `fork`/`exec` flows on your host while thinking about how
+the kernel shell boots. Build the helper programs with:
+
+```
+make -C host_tools
+```
+
+`host_tools/fork_demo` shows a minimal parent/child split that runs `/usr/bin/ls` on your
+home directory. `host_tools/shittyshell` is a tiny teaching shell that can either run
+absolute-path commands or launch QEMU (`boot`) against the built kernel image `rootfs.img`
+to reach the in-kernel shell after you have built it.
