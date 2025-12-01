@@ -7,9 +7,8 @@ OUTPUT_FORMAT(elf32-i386)
    kernel image. */
 SECTIONS
 {
-    /* link the multiboot struct here (must be 8-byte aligned per Multiboot2) */
+    /* link the multiboot struct here */
     . = 0;
-    . = ALIGN(8);
     .multiboot : { *(.multiboot) }
     /* Begin putting sections at 1 MiB, a conventional place for kernels to be
        loaded at by the bootloader. */

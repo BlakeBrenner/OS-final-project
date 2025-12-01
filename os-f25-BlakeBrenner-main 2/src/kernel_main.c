@@ -2,22 +2,19 @@
 #include "rprintf.h"
 #include "page.h"
 #include "paging.h"
-#include "shell.h"
-#include "interrupt.h"
-#include "keyboard.h"
-#include "timer.h"
 
 #define MULTIBOOT2_HEADER_MAGIC 0xe85250d6
 
 // Multiboot2 header for GRUB
 const unsigned int multiboot_header[] __attribute__((section(".multiboot"))) = {
-    MULTIBOOT2_HEADER_MAGIC,           // magic
-    0,                                // architecture (0 = i386)
-    24,                               // total header length in bytes (must match array size)
-    -(MULTIBOOT2_HEADER_MAGIC + 24),  // checksum: magic + arch + len + checksum == 0
-    0, 8                              // end tag: type = 0, size = 8
+    MULTIBOOT2_HEADER_MAGIC, 0, 16, -(16 + MULTIBOOT2_HEADER_MAGIC), 0, 12
 };
 
+uint8_t inb(uint16_t _port) {
+    uint8_t rv;
+    __asm__ __volatile__("inb %1, %0" : "=a"(rv) : "dN"(_port));
+    return rv;
+}
 
 // VGA definitions
 #define VGA_ADDRESS 0xb8000
@@ -28,6 +25,49 @@ struct termbuf {
     char ascii;
     char color;
 };
+
+
+
+unsigned char keyboard_map[128] =
+{
+   0,  27, '1', '2', '3', '4', '5', '6', '7', '8',     /* 9 */
+ '9', '0', '-', '=', '\b',     /* Backspace */
+ '\t',                 /* Tab */
+ 'q', 'w', 'e', 'r',   /* 19 */
+ 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n', /* Enter key */
+   0,                  /* 29   - Control */
+ 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';',     /* 39 */
+'\'', '`',   0,                /* Left shift */
+'\\', 'z', 'x', 'c', 'v', 'b', 'n',                    /* 49 */
+ 'm', ',', '.', '/',   0,                              /* Right shift */
+ '*',
+   0,  /* Alt */
+ ' ',  /* Space bar */
+   0,  /* Caps lock */
+   0,  /* 59 - F1 key ... > */
+   0,   0,   0,   0,   0,   0,   0,   0,  
+   0,  /* < ... F10 */
+   0,  /* 69 - Num lock*/
+   0,  /* Scroll Lock */
+   0,  /* Home key */
+   0,  /* Up Arrow */
+   0,  /* Page Up */
+ '-',
+   0,  /* Left Arrow */
+   0,  
+   0,  /* Right Arrow */
+ '+',
+   0,  /* 79 - End key*/
+   0,  /* Down Arrow */
+   0,  /* Page Down */
+   0,  /* Insert Key */
+   0,  /* Delete Key */
+   0,   0,   0,  
+   0,  /* F11 Key */
+   0,  /* F12 Key */
+   0,  /* All other keys are undefined */
+};
+
 
 static int cursor_row = 0;
 static int cursor_column = 0;
@@ -43,23 +83,12 @@ void scroll() {
             vram[(row - 1) * VGA_WIDTH + col] = vram[row * VGA_WIDTH + col];
         }
     }
-    
+
     // Clear the last line
     for (int col = 0; col < VGA_WIDTH; col++) {
         vram[(VGA_HEIGHT - 1) * VGA_WIDTH + col].ascii = ' ';
         vram[(VGA_HEIGHT - 1) * VGA_WIDTH + col].color = 7; // White on black
     }
-}
-
-void clear_screen() {
-    for (int row = 0; row < VGA_HEIGHT; row++) {
-        for (int col = 0; col < VGA_WIDTH; col++) {
-            vram[row * VGA_WIDTH + col].ascii = ' ';
-            vram[row * VGA_WIDTH + col].color = 7;
-        }
-    }
-    cursor_row = 0;
-    cursor_column = 0;
 }
 
 // Print a single character
@@ -88,7 +117,13 @@ int putc(int ch) {
     return ch;
 }
 
-
+    int print_string(void (*pc)(char), char *s){
+        while(*s != 0){
+            uint8_t status = inb(0x64);
+            pc(*s);
+            s++;
+        }
+    }
 
 void test_page_allocator(void) {
     esp_printf(putc, "\n=== PAGE FRAME ALLOCATOR TEST ===\n");
@@ -140,20 +175,17 @@ static void identity_map_range(uint32_t start, uint32_t end) {
     end   = align_down_page(end + PAGE_SIZE - 1);
 
     for (uint32_t a = start; a < end; a += PAGE_SIZE) {
-        struct ppage tmp; tmp.next = NULL; tmp.physical_addr = (void *)(uintptr_t)a; // VA==PA
+        struct ppage tmp; tmp.next = NULL; tmp.physical_addr = a; // VA==PA
         (void)map_pages((void*)a, &tmp, kernel_pd);
     }
 }
 
 // Kernel entry point
 void main() {
-    clear_screen();
-    esp_printf(putc, "Kernel shell booting...\n");
+    esp_printf(putc, "Hello, World!\n");
+    esp_printf(putc, "Execution level: %d\n", 0);
 
-
-    init_pfa_list();
-
-    /* ---- page bring-up ---- */
+        /* ---- page bring-up ---- */
     // 1) Identity-map kernel [0x0010_0000, &_end_kernel)
     identity_map_range(0x00100000u, (uint32_t)&_end_kernel);
 
@@ -166,8 +198,6 @@ void main() {
     // 3) Identity-map VGA text buffer @ 0xB8000 (one page is enough)
     identity_map_range(0x000B8000u, 0x000B8000u + PAGE_SIZE);
 
-    paging_init_recursive(kernel_pd);
-
     // 4) Load CR3 and enable paging (CR0.PE | CR0.PG)
     loadPageDirectory(kernel_pd);
     enablePaging();
@@ -175,18 +205,20 @@ void main() {
                kernel_pd, (void*)0x00100000u, &_end_kernel, (void*)esp_val);
     /* ---- end paging bring-up ---- */
     
-    remap_pic();
-    load_gdt();
-    init_idt();
+    test_page_allocator();
 
-    keyboard_init();
-    timer_init(100);
+    while (1){
+         // Read keyboard controller status port (0x64)
+        uint8_t status = inb(0x64);
 
-    asm("sti");
+        // If output buffer is full (bit 0 = 1), read scancode
+        if (status & 1) {
+            uint8_t scancode = inb(0x60);   // Get scancode from port 0x60
 
-    shell_run();
-
-    while (1) {
-        __asm__ __volatile__("hlt");
+            // Only process valid scancodes (< 128 = key press)
+            if (scancode < 128) {
+                esp_printf(putc, "0x%02x %c\n", scancode, keyboard_map[scancode]);
+            } //Ignore key releases for now
+        } // Prevent CPU from running into invalid instructions
     }
 }

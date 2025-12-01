@@ -21,8 +21,6 @@
 
 #include <stdint.h>
 #include "interrupt.h"
-#include "keyboard.h"
-#include "timer.h"
 
 struct idt_entry idt_entries[256];
 struct idt_ptr   idt_ptr;
@@ -39,11 +37,7 @@ void outb (uint16_t _port, uint8_t val) {
     __asm__ __volatile__ ("outb %0, %1" : : "a" (val),  "dN" (_port) );
 }
 
-uint8_t inb (uint16_t _port) {
-    uint8_t rv;
-    __asm__ __volatile__("inb %1, %0" : "=a"(rv) : "dN"(_port));
-    return rv;
-}
+uint8_t inb (uint16_t _port);
 
 
 void memset(char *s, char c, unsigned int n) {
@@ -311,7 +305,7 @@ __attribute__((interrupt)) void coprocessor_not_available_handler(struct interru
 //    while(1);
 }
 
-__attribute__((interrupt)) void double_fault_handler(struct interrupt_frame_with_error* frame)
+__attribute__((interrupt)) void double_fault_handler(struct interrupt_frame* frame)
 {
     asm("cli");
     /* do something */
@@ -327,7 +321,7 @@ __attribute__((interrupt)) void coprocessor_segment_overrun_handler(struct inter
 }
 
 
-__attribute__((interrupt)) void invalid_tss_handler(struct interrupt_frame_with_error* frame)
+__attribute__((interrupt)) void invalid_tss_handler(struct interrupt_frame* frame)
 {
     asm("cli");
     /* do something */
@@ -335,7 +329,7 @@ __attribute__((interrupt)) void invalid_tss_handler(struct interrupt_frame_with_
 }
 
 
-__attribute__((interrupt)) void segment_not_present_handler(struct interrupt_frame_with_error* frame)
+__attribute__((interrupt)) void segment_not_present_handler(struct interrupt_frame* frame)
 {
     asm("cli");
     /* do something */
@@ -343,7 +337,7 @@ __attribute__((interrupt)) void segment_not_present_handler(struct interrupt_fra
 }
 
 
-__attribute__((interrupt)) void stack_exception_handler(struct interrupt_frame_with_error* frame)
+__attribute__((interrupt)) void stack_exception_handler(struct interrupt_frame* frame)
 {
     asm("cli");
     /* do something */
@@ -351,16 +345,16 @@ __attribute__((interrupt)) void stack_exception_handler(struct interrupt_frame_w
 }
 
 
-__attribute__((interrupt)) void general_protection_handler(struct interrupt_frame_with_error* frame)
+//__attribute__((interrupt)) void general_protection_handler(struct interrupt_frame* frame)
+void general_protection_handler(struct interrupt_frame* frame)
 {
-    (void)frame;
     asm("cli");
     /* do something */
     while(1);
 }
-__attribute__((interrupt)) void page_fault_handler(struct interrupt_frame_with_error* frame)
+//void page_fault_handler(struct interrupt_frame* frame)
+void page_fault_handler(struct process_context_with_error* ctx)
 {
-    (void)frame;
     asm("cli");
     while(1);
 }
@@ -382,17 +376,17 @@ __attribute__((interrupt)) void stub_isr(struct interrupt_frame* frame)
 
 __attribute__((interrupt)) void pit_handler(struct interrupt_frame* frame)
 {
-    (void)frame;
-    timer_interrupt_handler();
-    PIC_sendEOI(0);
+    asm("cli");
+    /* do something */
+    while(1);
 }
 
 
 __attribute__((interrupt)) void keyboard_handler(struct interrupt_frame* frame)
 {
-    (void)frame;
-    keyboard_interrupt_handler();
-    PIC_sendEOI(1);
+    asm("cli");
+    /* do something */
+    outb(0x20,0x20);
 }
 
 
@@ -479,7 +473,7 @@ void remap_pic(void)
     outb(0x21 , 0xff);
     outb(0xA1 , 0xff);
     /* Initialization finished */
-    outb(0x21, 0xfc); // Enable PIT (IRQ0) and keyboard (IRQ1)
+    outb(0x21, 0xfd); // Enable keyboard interrupts
 }
 
 
