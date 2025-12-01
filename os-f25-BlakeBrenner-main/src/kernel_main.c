@@ -146,7 +146,6 @@ void main() {
     clear_screen();
     esp_printf(putc, "Kernel shell booting...\n");
 
-    init_pfa_list();
 
     init_pfa_list();
 

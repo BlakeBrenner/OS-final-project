@@ -311,7 +311,7 @@ __attribute__((interrupt)) void coprocessor_not_available_handler(struct interru
 //    while(1);
 }
 
-__attribute__((interrupt)) void double_fault_handler(struct interrupt_frame* frame)
+__attribute__((interrupt)) void double_fault_handler(struct interrupt_frame_with_error* frame)
 {
     asm("cli");
     /* do something */
@@ -327,7 +327,7 @@ __attribute__((interrupt)) void coprocessor_segment_overrun_handler(struct inter
 }
 
 
-__attribute__((interrupt)) void invalid_tss_handler(struct interrupt_frame* frame)
+__attribute__((interrupt)) void invalid_tss_handler(struct interrupt_frame_with_error* frame)
 {
     asm("cli");
     /* do something */
@@ -335,7 +335,7 @@ __attribute__((interrupt)) void invalid_tss_handler(struct interrupt_frame* fram
 }
 
 
-__attribute__((interrupt)) void segment_not_present_handler(struct interrupt_frame* frame)
+__attribute__((interrupt)) void segment_not_present_handler(struct interrupt_frame_with_error* frame)
 {
     asm("cli");
     /* do something */
@@ -343,7 +343,7 @@ __attribute__((interrupt)) void segment_not_present_handler(struct interrupt_fra
 }
 
 
-__attribute__((interrupt)) void stack_exception_handler(struct interrupt_frame* frame)
+__attribute__((interrupt)) void stack_exception_handler(struct interrupt_frame_with_error* frame)
 {
     asm("cli");
     /* do something */
