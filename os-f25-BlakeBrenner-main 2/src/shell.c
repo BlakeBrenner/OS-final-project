@@ -427,7 +427,7 @@ void shell_run(void) {
 
     for (;;) {
         print_prompt();
-        int len = readline(line,sizeof(line));
+        readline(line,sizeof(line));
         int argc = tokenize(line,argv,8);
         handle_cmd(argc,argv);
     }
