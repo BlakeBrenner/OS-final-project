@@ -7,6 +7,9 @@
 
 #define VIDEO_ADDR 0xB8000
 
+void identity_map_range(uint32_t start, uint32_t end);
+
+
 int putc(int ch) {
     static int video_index=0;
     volatile char *video = (volatile char*)VIDEO_ADDR;
