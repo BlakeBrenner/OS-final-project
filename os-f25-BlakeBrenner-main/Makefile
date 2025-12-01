@@ -55,16 +55,15 @@ obj:
 
 rootfs.img:
 	dd if=/dev/zero of=rootfs.img bs=1M count=32
-	$(GRUBLOC)grub-mkimage -p "(hd0,msdos1)/boot/grub" --config=grub-early.cfg -o grub.img -O i386-pc \
-			normal biosdisk multiboot multiboot2 configfile fat exfat part_msdos
+	$(GRUBLOC)grub-mkimage -p "(hd0,msdos1)/boot" -o grub.img -O i386-pc \
+		normal biosdisk multiboot multiboot2 configfile fat exfat part_msdos
 	dd if=$(BOOTIMG) of=rootfs.img conv=notrunc
 	dd if=grub.img of=rootfs.img conv=notrunc bs=512 seek=1 #########
 	echo 'start=2048, type=0b, bootable' | sfdisk rootfs.img
 	mkfs.vfat --offset 2048 -F16 rootfs.img
 	mcopy -i rootfs.img@@1M kernel ::/
-	mmd   -i rootfs.img@@1M ::/boot
-	mmd   -i rootfs.img@@1M ::/boot/grub
-	mcopy -i rootfs.img@@1M grub.cfg ::/boot/grub
+	mmd -i rootfs.img@@1M boot
+	mcopy -i rootfs.img@@1M grub.cfg ::/boot
 	@echo " -- BUILD COMPLETED SUCCESSFULLY --"
 
 
