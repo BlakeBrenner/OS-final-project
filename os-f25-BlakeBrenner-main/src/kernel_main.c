@@ -148,7 +148,9 @@ void main() {
 
     init_pfa_list();
 
-        /* ---- page bring-up ---- */
+    init_pfa_list();
+
+    /* ---- page bring-up ---- */
     // 1) Identity-map kernel [0x0010_0000, &_end_kernel)
     identity_map_range(0x00100000u, (uint32_t)&_end_kernel);
 
