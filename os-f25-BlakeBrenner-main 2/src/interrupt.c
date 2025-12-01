@@ -347,16 +347,17 @@ __attribute__((interrupt)) void stack_exception_handler(struct interrupt_frame* 
 }
 
 
-//__attribute__((interrupt)) void general_protection_handler(struct interrupt_frame* frame)
-void general_protection_handler(struct interrupt_frame* frame)
+__attribute__((interrupt)) void general_protection_handler(struct interrupt_frame* frame)
 {
+    (void)frame;
     asm("cli");
     /* do something */
     while(1);
 }
-//void page_fault_handler(struct interrupt_frame* frame)
-void page_fault_handler(struct process_context_with_error* ctx)
+
+__attribute__((interrupt)) void page_fault_handler(struct process_context_with_error* ctx)
 {
+    (void)ctx;
     asm("cli");
     while(1);
 }
