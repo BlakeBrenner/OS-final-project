@@ -21,6 +21,8 @@
 
 #include <stdint.h>
 #include "interrupt.h"
+#include "keyboard.h"
+#include "timer.h"
 
 struct idt_entry idt_entries[256];
 struct idt_ptr   idt_ptr;
@@ -37,7 +39,11 @@ void outb (uint16_t _port, uint8_t val) {
     __asm__ __volatile__ ("outb %0, %1" : : "a" (val),  "dN" (_port) );
 }
 
-uint8_t inb (uint16_t _port);
+uint8_t inb (uint16_t _port) {
+    uint8_t rv;
+    __asm__ __volatile__("inb %1, %0" : "=a"(rv) : "dN"(_port));
+    return rv;
+}
 
 
 void memset(char *s, char c, unsigned int n) {
@@ -376,17 +382,17 @@ __attribute__((interrupt)) void stub_isr(struct interrupt_frame* frame)
 
 __attribute__((interrupt)) void pit_handler(struct interrupt_frame* frame)
 {
-    asm("cli");
-    /* do something */
-    while(1);
+    (void)frame;
+    timer_interrupt_handler();
+    PIC_sendEOI(0);
 }
 
 
 __attribute__((interrupt)) void keyboard_handler(struct interrupt_frame* frame)
 {
-    asm("cli");
-    /* do something */
-    outb(0x20,0x20);
+    (void)frame;
+    keyboard_interrupt_handler();
+    PIC_sendEOI(1);
 }
 
 
@@ -473,7 +479,7 @@ void remap_pic(void)
     outb(0x21 , 0xff);
     outb(0xA1 , 0xff);
     /* Initialization finished */
-    outb(0x21, 0xfd); // Enable keyboard interrupts
+    outb(0x21, 0xfc); // Enable PIT (IRQ0) and keyboard (IRQ1)
 }
 
 
