@@ -63,22 +63,6 @@ void memset(char *s,char c,unsigned n) {
     for (unsigned i=0;i<n;i++) s[i]=c;
 }
 
-/* ------------------- GDT + TSS (Keep your original code) ------------------- */
-
-extern uint32_t stack_top;
-extern int _end_stack;
-
-/* NOTE: If you have GDT/TSS functions in your original interrupt.c,
-   keep them here. This includes:
-   - GDT array
-   - write_tss()
-   - load_gdt()
-   - Any other GDT/TSS related code
-   
-   I'm leaving this section blank since I don't have your original code.
-   Just copy your original GDT/TSS code here.
-*/
-
 /* ------------------- IDT setup ------------------- */
 
 static void idt_set_gate(uint8_t num,uint32_t base,uint16_t sel,uint8_t flags) {
@@ -265,15 +249,23 @@ void IRQ_clear_mask(unsigned char IRQline) {
     outb(port, value);
 }
 
+/* ------------------- GDT/Assembly stub (if needed) ------------------- */
+
+/* Dummy stub_isr - you can replace with your actual exception handlers */
+__attribute__((interrupt))
+void stub_isr(struct interrupt_frame *f) {
+    (void)f;
+    // Default do-nothing handler
+}
+
 /* ------------------- init_idt ------------------- */
 
 void init_idt() {
     memset((char*)&idt_entries, 0, sizeof(idt_entries));
 
-    /* If you have a stub_isr, uncomment this:
-    for (int i=0; i<256; i++)
+    /* Set default handler for all interrupts */
+    for (int i = 0; i < 256; i++)
         idt_set_gate(i, (uint32_t)stub_isr, 0x08, 0x8E);
-    */
 
     /* Hook PIT (IRQ0) + keyboard (IRQ1) */
     idt_set_gate(32, (uint32_t)pit_handler, 0x08, 0x8E);
@@ -283,12 +275,52 @@ void init_idt() {
     idt_ptr.limit = sizeof(idt_entries) - 1;
     idt_ptr.base = (uint32_t)&idt_entries;
 
-    /* If you have idt_flush assembly function, use it: */
-    idt_flush(&idt_ptr);
-    
-    /* Otherwise use inline assembly:
+    /* Load IDT using inline assembly */
     __asm__ __volatile__("lidt %0" : : "m"(idt_ptr));
-    */
+}
+
+/* ------------------- load_gdt (inline assembly version) ------------------- */
+
+/* GDT structure */
+struct gdt_entry {
+    uint16_t limit_low;
+    uint16_t base_low;
+    uint8_t  base_middle;
+    uint8_t  access;
+    uint8_t  granularity;
+    uint8_t  base_high;
+} __attribute__((packed));
+
+struct gdt_ptr_struct {
+    uint16_t limit;
+    uint32_t base;
+} __attribute__((packed));
+
+/* Simple 3-entry GDT: null, code, data */
+static struct gdt_entry gdt[3] = {
+    {0, 0, 0, 0, 0, 0},                    // Null segment
+    {0xFFFF, 0, 0, 0x9A, 0xCF, 0},        // Code segment
+    {0xFFFF, 0, 0, 0x92, 0xCF, 0}         // Data segment
+};
+
+static struct gdt_ptr_struct gdt_ptr;
+
+void load_gdt(void) {
+    gdt_ptr.limit = sizeof(gdt) - 1;
+    gdt_ptr.base = (uint32_t)&gdt;
+    
+    __asm__ __volatile__(
+        "lgdt %0\n"
+        "mov $0x10, %%ax\n"   // Data segment selector
+        "mov %%ax, %%ds\n"
+        "mov %%ax, %%es\n"
+        "mov %%ax, %%fs\n"
+        "mov %%ax, %%gs\n"
+        "mov %%ax, %%ss\n"
+        "ljmp $0x08, $1f\n"   // Far jump to code segment
+        "1:\n"
+        : : "m"(gdt_ptr) : "eax"
+    );
 }
 
 /* ------------------- PIC remap ------------------- */

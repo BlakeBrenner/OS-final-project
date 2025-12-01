@@ -78,4 +78,5 @@ void *get_physaddr(void *virtualaddr);
    Returns 0 on success, negative on error. */
 int map_page(void *physaddr, void *virtualaddr, unsigned int flags);
 
+void identity_map_range(uint32_t start, uint32_t end);
 #endif /* PAGING_H */

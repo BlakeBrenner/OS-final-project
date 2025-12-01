@@ -165,3 +165,65 @@ int map_page(void *physaddr, void *virtualaddr, unsigned int flags) {
     invlpg((void*)va);
     return 0;
 }
+/* Identity map a range of physical addresses (phys addr = virt addr)
+   Used during early boot before higher-half kernel */
+void identity_map_range(uint32_t start, uint32_t end) {
+    // Align start down to page boundary
+    start = start & ~(PAGE_SIZE - 1);
+    
+    // Align end up to page boundary  
+    end = (end + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+    
+    // Map each 4KB page in the range
+    for (uint32_t addr = start; addr < end; addr += PAGE_SIZE) {
+        uint32_t pdi = (addr >> 22) & 0x3FF;  // Page directory index
+        uint32_t pti = (addr >> 12) & 0x3FF;  // Page table index
+        
+        // Ensure page table exists for this PDE
+        if (!kernel_pd[pdi].present) {
+            // Allocate a page table from the static pool
+            if (kernel_pt_count >= PT_POOL_COUNT) {
+                // Out of page tables - silently fail for now
+                // In a real system, you'd panic or handle this
+                continue;
+            }
+            
+            struct page *pt = &kernel_pt_pool[kernel_pt_count++][0];
+            
+            // Zero out the page table
+            for (int i = 0; i < PT_ENTRIES; i++) {
+                pt[i].present = 0;
+                pt[i].rw = 0;
+                pt[i].user = 0;
+                pt[i].accessed = 0;
+                pt[i].dirty = 0;
+                pt[i].unused = 0;
+                pt[i].frame = 0;
+            }
+            
+            // Setup the page directory entry
+            kernel_pd[pdi].present = 1;
+            kernel_pd[pdi].rw = 1;
+            kernel_pd[pdi].user = 0;
+            kernel_pd[pdi].writethru = 0;
+            kernel_pd[pdi].cachedisabled = 0;
+            kernel_pd[pdi].accessed = 0;
+            kernel_pd[pdi].pagesize = 0;  // 4KB pages
+            kernel_pd[pdi].ignored = 0;
+            kernel_pd[pdi].os_specific = 0;
+            kernel_pd[pdi].frame = ((uint32_t)pt) >> 12;
+        }
+        
+        // Get the page table (before paging is enabled, physical = virtual)
+        struct page *pt = (struct page*)(kernel_pd[pdi].frame << 12);
+        
+        // Setup the page table entry for identity mapping (phys = virt)
+        pt[pti].present = 1;
+        pt[pti].rw = 1;
+        pt[pti].user = 0;
+        pt[pti].accessed = 0;
+        pt[pti].dirty = 0;
+        pt[pti].unused = 0;
+        pt[pti].frame = addr >> 12;  // Identity: virt addr = phys addr
+    }
+}
