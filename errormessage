@@ -1,4 +1,4 @@
-localhost ~/Final/OS-final-project/os-f25-BlakeBrenner-main 2 # make
+ocalhost ~/Final/OS-final-project/os-f25-BlakeBrenner-main 2 # make
 gcc -ffreestanding -mgeneral-regs-only -mno-mmx -m32 -march=i386 -fno-pie -fno-stack-protector -g3 -Wall  -c -g -o obj/kernel_main.o src/kernel_main.c
 gcc -ffreestanding -mgeneral-regs-only -mno-mmx -m32 -march=i386 -fno-pie -fno-stack-protector -g3 -Wall  -c -g -o obj/rprintf.o src/rprintf.c
 gcc -ffreestanding -mgeneral-regs-only -mno-mmx -m32 -march=i386 -fno-pie -fno-stack-protector -g3 -Wall  -c -g -o obj/page.o src/page.c
@@ -9,12 +9,11 @@ src/shell.c:430:13: warning: unused variable ‘len’ [-Wunused-variable]
   430 |         int len = readline(line,sizeof(line));
       |             ^~~
 gcc -ffreestanding -mgeneral-regs-only -mno-mmx -m32 -march=i386 -fno-pie -fno-stack-protector -g3 -Wall  -c -g -o obj/interrupt.o src/interrupt.c
-ld -melf_i386  obj/* -Tkernel.ld -o kernel
-ld: obj/interrupt.o: in function `init_idt':
-/root/Final/OS-final-project/os-f25-BlakeBrenner-main 2/src/interrupt.c:287:(.text+0x56f): undefined reference to `idt_flush'
-ld: obj/kernel_main.o: in function `main':
-/root/Final/OS-final-project/os-f25-BlakeBrenner-main 2/src/kernel_main.c:37:(.text+0x8f): undefined reference to `load_gdt'
-ld: /root/Final/OS-final-project/os-f25-BlakeBrenner-main 2/src/kernel_main.c:42:(.text+0xa7): undefined reference to `identity_map_range'
-ld: /root/Final/OS-final-project/os-f25-BlakeBrenner-main 2/src/kernel_main.c:47:(.text+0xe9): undefined reference to `identity_map_range'
-ld: /root/Final/OS-final-project/os-f25-BlakeBrenner-main 2/src/kernel_main.c:49:(.text+0xfe): undefined reference to `identity_map_range'
-make: *** [Makefile:47: bin] Error 1
+src/interrupt.c:256:6: error: conflicting types for ‘stub_isr’; have ‘void(struct interrupt_frame *)’
+  256 | void stub_isr(struct interrupt_frame *f) {
+      |      ^~~~~~~~
+In file included from src/interrupt.c:2:
+src/interrupt.h:91:13: note: previous declaration of ‘stub_isr’ with type ‘void(void)’
+   91 | extern void stub_isr(void);
+      |             ^~~~~~~~
+make: *** [Makefile:38: obj/interrupt.o] Error 1
