@@ -10,8 +10,12 @@
 #define MULTIBOOT2_HEADER_MAGIC 0xe85250d6
 
 // Multiboot2 header for GRUB
-const unsigned int multiboot_header[] __attribute__((section(".multiboot"))) = {
-    MULTIBOOT2_HEADER_MAGIC, 0, 16, -(16 + MULTIBOOT2_HEADER_MAGIC), 0, 12
+const unsigned int multiboot_header[] __attribute__((section(".multiboot"), aligned(8))) = {
+    MULTIBOOT2_HEADER_MAGIC,           // magic
+    0,                                // architecture (0 = i386)
+    24,                               // total header length in bytes (must match array size)
+    -(MULTIBOOT2_HEADER_MAGIC + 24),  // checksum: magic + arch + len + checksum == 0
+    0, 8                              // end tag: type = 0, size = 8
 };
 
 
