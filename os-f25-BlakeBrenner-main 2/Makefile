@@ -23,6 +23,7 @@ ODIR = obj
 SDIR = src
 
 OBJS = \
+	multiboot2.o \
 	kernel_main.o \
 	rprintf.o \
 	page.o \
