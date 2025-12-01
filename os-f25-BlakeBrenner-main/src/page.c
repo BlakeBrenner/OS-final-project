@@ -98,3 +98,7 @@ void free_physical_pages(struct ppage *ppage_list) {
 unsigned int pfa_free_count(void) {
     return list_length(free_list_head);
 }
+
+unsigned int pfa_total_count(void) {
+    return sizeof(physical_page_array) / sizeof(physical_page_array[0]);
+}
