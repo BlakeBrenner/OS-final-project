@@ -21,8 +21,6 @@
 
 #include <stdint.h>
 #include "interrupt.h"
-#include "keyboard.h"
-#include "timer.h"
 
 struct idt_entry idt_entries[256];
 struct idt_ptr   idt_ptr;
@@ -347,17 +345,16 @@ __attribute__((interrupt)) void stack_exception_handler(struct interrupt_frame* 
 }
 
 
-__attribute__((interrupt)) void general_protection_handler(struct interrupt_frame* frame)
+//__attribute__((interrupt)) void general_protection_handler(struct interrupt_frame* frame)
+void general_protection_handler(struct interrupt_frame* frame)
 {
-    (void)frame;
     asm("cli");
     /* do something */
     while(1);
 }
-
-__attribute__((interrupt)) void page_fault_handler(struct process_context_with_error* ctx)
+//void page_fault_handler(struct interrupt_frame* frame)
+void page_fault_handler(struct process_context_with_error* ctx)
 {
-    (void)ctx;
     asm("cli");
     while(1);
 }
@@ -379,16 +376,17 @@ __attribute__((interrupt)) void stub_isr(struct interrupt_frame* frame)
 
 __attribute__((interrupt)) void pit_handler(struct interrupt_frame* frame)
 {
-    timer_handle_tick();
-    PIC_sendEOI(0);
+    asm("cli");
+    /* do something */
+    while(1);
 }
 
 
 __attribute__((interrupt)) void keyboard_handler(struct interrupt_frame* frame)
 {
-    uint8_t scancode = inb(0x60);
-    keyboard_handle_scancode(scancode);
-    PIC_sendEOI(1);
+    asm("cli");
+    /* do something */
+    outb(0x20,0x20);
 }
 
 

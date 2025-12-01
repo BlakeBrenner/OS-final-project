@@ -29,7 +29,4 @@ void free_physical_pages(struct ppage *ppage_list);
 // Returns the number of pages currently on the free list
 unsigned int pfa_free_count(void);
 
-// Returns the total number of managed page frames
-unsigned int pfa_total_count(void);
-
 #endif // PAGE_H

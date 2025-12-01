@@ -23,15 +23,10 @@ ODIR = obj
 SDIR = src
 
 OBJS = \
-        kernel_main.o \
-        rprintf.o \
-        page.o \
-        paging.o\
-        interrupt.o \
-        console.o \
-        keyboard.o \
-        timer.o \
-        shell.o\
+	kernel_main.o \
+	rprintf.o \
+	page.o \
+	paging.o\
 
 
 # Make sure to keep a blank line here after OBJS list

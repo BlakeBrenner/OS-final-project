@@ -2,7 +2,6 @@
 
 // Static descriptor array (128 * 2 MiB = 256 MiB of pages)
 static struct ppage physical_page_array[128];
-static const unsigned int physical_page_count = sizeof(physical_page_array) / sizeof(physical_page_array[0]);
 
 // Global free list head
 struct ppage *free_list_head = NULL;
@@ -47,7 +46,7 @@ static unsigned int list_length(struct ppage *head) {
 
 void init_pfa_list(void) {
     free_list_head = NULL;
-    for (unsigned int i = 0; i < physical_page_count; ++i) {
+    for (unsigned int i = 0; i < (sizeof(physical_page_array) / sizeof(physical_page_array[0])); ++i) {
         struct ppage *pp = &physical_page_array[i];
         pp->next = pp->prev = NULL;
         pp->physical_addr = (void *)(uintptr_t)(i * (uintptr_t)PFA_PAGE_BYTES);
@@ -98,8 +97,4 @@ void free_physical_pages(struct ppage *ppage_list) {
 
 unsigned int pfa_free_count(void) {
     return list_length(free_list_head);
-}
-
-unsigned int pfa_total_count(void) {
-    return physical_page_count;
 }
