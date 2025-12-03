@@ -19,19 +19,21 @@ static int readline(char *buf, int maxlen) {
         char c = keyboard_read_char();
 
         if (c == '\n' || c == '\r') {
-            esp_printf(putc, "\n");
+            putc('\n');  // Use putc directly, not esp_printf
             buf[len] = 0;
             return len;
         }
         if ((c == '\b' || c == 127) && len > 0) {
             len--;
-            esp_printf(putc, "\b \b");
+            putc('\b');   // Backspace
+            putc(' ');    // Space to erase
+            putc('\b');   // Backspace again
             continue;
         }
         if (c >= 32 && c < 127) {
             if (len + 1 < maxlen) {
                 buf[len++] = c;
-                esp_printf(putc, "%c", c);
+                putc(c);  // Use putc directly
             }
         }
     }
@@ -103,8 +105,12 @@ static void cmd_help(void) {
     );
 }
 
+/* Forward declaration - vga_clear is in kernel_main.c */
+extern void vga_clear(void);
+
 static void cmd_cls(void) {
-    for (int i=0;i<30;i++) esp_printf(putc, "\n");
+    vga_clear();
+    esp_printf(putc, "Screen cleared.\n");
 }
 
 static void cmd_echo(int argc,char *argv[]) {
