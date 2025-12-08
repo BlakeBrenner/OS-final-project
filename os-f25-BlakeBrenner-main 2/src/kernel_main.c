@@ -138,7 +138,7 @@ void main(void) {
     /* ---------- page-frame allocator ---------- */
     esp_printf(putc,"Initializing memory allocator...\n");
     init_pfa_list();
-    esp_printf(putc,"Free frames: %u\n", pfa_free_count());
+    esp_printf(putc,"Free frames: %d\n", (int)pfa_free_count());
 
     /* ---------- PIT ---------- */
     esp_printf(putc,"Starting timer...\n");

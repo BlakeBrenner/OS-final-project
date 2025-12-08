@@ -6,11 +6,13 @@
 #include "shell.h"
 
 extern int putc(int ch);
+extern void vga_clear(void);
 
 /* ---------- Helpers ---------- */
 
 static void print_prompt(void) {
-    esp_printf(putc, "> ");
+    putc('>');
+    putc(' ');
 }
 
 static int readline(char *buf, int maxlen) {
@@ -19,21 +21,21 @@ static int readline(char *buf, int maxlen) {
         char c = keyboard_read_char();
 
         if (c == '\n' || c == '\r') {
-            putc('\n');  // Use putc directly, not esp_printf
+            putc('\n');
             buf[len] = 0;
             return len;
         }
         if ((c == '\b' || c == 127) && len > 0) {
             len--;
-            putc('\b');   // Backspace
-            putc(' ');    // Space to erase
-            putc('\b');   // Backspace again
+            putc('\b');
+            putc(' ');
+            putc('\b');
             continue;
         }
         if (c >= 32 && c < 127) {
             if (len + 1 < maxlen) {
                 buf[len++] = c;
-                putc(c);  // Use putc directly
+                putc(c);
             }
         }
     }
@@ -105,12 +107,8 @@ static void cmd_help(void) {
     );
 }
 
-/* Forward declaration - vga_clear is in kernel_main.c */
-extern void vga_clear(void);
-
 static void cmd_cls(void) {
     vga_clear();
-    esp_printf(putc, "Screen cleared.\n");
 }
 
 static void cmd_echo(int argc,char *argv[]) {
@@ -124,8 +122,8 @@ static void cmd_echo(int argc,char *argv[]) {
 static void cmd_meminfo(void) {
     unsigned free = pfa_free_count();
     unsigned total = 128;
-    esp_printf(putc, "total frames: %u\n", total);
-    esp_printf(putc, "free frames : %u\n", free);
+    esp_printf(putc, "total frames: %d\n", (int)total);
+    esp_printf(putc, "free frames : %d\n", (int)free);
 }
 
 static void cmd_frames(void) {
@@ -158,14 +156,14 @@ static void cmd_ptdump(void) {
         unsigned long pde = pd[i];
         if (!(pde & 1)) continue;
 
-        esp_printf(putc,"PDE %u: 0x%08x\n", i,(uint32_t)pde);
+        esp_printf(putc,"PDE %d: 0x%08x\n", (int)i,(uint32_t)pde);
 
         unsigned long *pt = (unsigned long*)(0xFFC00000 + i*0x1000);
         int shown = 0;
         for (unsigned j=0;j<1024 && shown<4;j++) {
             unsigned long pte = pt[j];
             if (pte & 1) {
-                esp_printf(putc,"  PTE %u: 0x%08x\n", j,(uint32_t)pte);
+                esp_printf(putc,"  PTE %d: 0x%08x\n", (int)j,(uint32_t)pte);
                 shown++;
             }
         }
@@ -188,7 +186,8 @@ static void cmd_read32(int argc,char *argv[]) {
 
 static void cmd_uptime(void) {
     uint32_t t = timer_ticks();
-    esp_printf(putc,"ticks=%u seconds=%u\n", t, t/100);
+    uint32_t seconds = t / 100;
+    esp_printf(putc,"ticks=%d seconds=%d\n", (int)t, (int)seconds);
 }
 
 /* ==================== NEW COMMANDS ==================== */
@@ -300,7 +299,7 @@ static void cmd_alloc(int argc, char *argv[]) {
         return;
     }
     
-    esp_printf(putc, "allocated %u page(s):\n", npages);
+    esp_printf(putc, "allocated %d page(s):\n", (int)npages);
     struct ppage *p = pages;
     int i = 0;
     while (p && i < 10) {
@@ -319,16 +318,16 @@ static void cmd_info(void) {
     
     esp_printf(putc, "Kernel Information:\n");
     esp_printf(putc, "  Kernel end: 0x%08x\n", (uint32_t)&_end_kernel);
-    esp_printf(putc, "  Page size:  %u bytes\n", PAGE_SIZE);
+    esp_printf(putc, "  Page size:  %d bytes\n", (int)PAGE_SIZE);
     esp_printf(putc, "  PD address: 0x%08x\n", (uint32_t)kernel_pd);
     
     unsigned free = pfa_free_count();
     unsigned total = 128;
     unsigned used = total - free;
-    esp_printf(putc, "  Memory:     %u / %u frames used\n", used, total);
+    esp_printf(putc, "  Memory:     %d / %d frames used\n", (int)used, (int)total);
     
     uint32_t t = timer_ticks();
-    esp_printf(putc, "  Uptime:     %u seconds\n", t / 100);
+    esp_printf(putc, "  Uptime:     %d seconds\n", (int)(t / 100));
 }
 
 static void cmd_sleep(int argc, char *argv[]) {
@@ -351,7 +350,7 @@ static void cmd_sleep(int argc, char *argv[]) {
     uint32_t start = timer_ticks();
     uint32_t target = start + (seconds * 100);
     
-    esp_printf(putc, "sleeping for %u seconds...\n", seconds);
+    esp_printf(putc, "sleeping for %d seconds...\n", (int)seconds);
     
     while (timer_ticks() < target) {
         __asm__ __volatile__("hlt");
