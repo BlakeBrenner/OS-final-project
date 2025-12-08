@@ -120,10 +120,25 @@ static void cmd_echo(int argc,char *argv[]) {
 }
 
 static void cmd_meminfo(void) {
+    extern struct ppage *free_list_head;
+    
+    // Count manually to debug
+    int manual_count = 0;
+    struct ppage *p = free_list_head;
+    while (p) {
+        manual_count++;
+        p = p->next;
+    }
+    
     unsigned free = pfa_free_count();
     unsigned total = 128;
     esp_printf(putc, "total frames: %d\n", (int)total);
     esp_printf(putc, "free frames : %d\n", (int)free);
+    esp_printf(putc, "manual count: %d\n", manual_count);
+    
+    if (free_list_head == 0) {
+        esp_printf(putc, "WARNING: free_list_head is NULL!\n");
+    }
 }
 
 static void cmd_frames(void) {
@@ -315,6 +330,15 @@ static void cmd_alloc(int argc, char *argv[]) {
 
 static void cmd_info(void) {
     extern char _end_kernel;
+    extern struct ppage *free_list_head;
+    
+    // Count manually
+    int manual_count = 0;
+    struct ppage *p = free_list_head;
+    while (p) {
+        manual_count++;
+        p = p->next;
+    }
     
     esp_printf(putc, "Kernel Information:\n");
     esp_printf(putc, "  Kernel end: 0x%08x\n", (uint32_t)&_end_kernel);
@@ -324,7 +348,9 @@ static void cmd_info(void) {
     unsigned free = pfa_free_count();
     unsigned total = 128;
     unsigned used = total - free;
+    
     esp_printf(putc, "  Memory:     %d / %d frames used\n", (int)used, (int)total);
+    esp_printf(putc, "  Free count: %d (manual: %d)\n", (int)free, manual_count);
     
     uint32_t t = timer_ticks();
     esp_printf(putc, "  Uptime:     %d seconds\n", (int)(t / 100));
